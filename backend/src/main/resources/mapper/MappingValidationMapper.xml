@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.backend.backend.domain.mapping.mapper.MappingValidationMapper">
+
+    <resultMap id="MappingItemResultMap" type="com.backend.backend.domain.mapping.entity.MappingItem">
+        <id property="itemId" column="mapping_item_id"/>
+        <result property="mappingId" column="mapping_id"/>
+        <result property="gestureId" column="gesture_id"/>
+        <result property="actionId" column="action_id"/>
+    </resultMap>
+
+    <select id="findByMappingId" resultMap="MappingItemResultMap">
+        SELECT mapping_item_id, mapping_id, gesture_id, action_id
+        FROM mapping_items
+        WHERE mapping_id = #{mappingId}
+    </select>
+
+    <select id="countByGestureIdExcludingItem" resultType="int">
+        SELECT COUNT(*)
+        FROM mapping_items
+        WHERE mapping_id = #{mappingId}
+          AND gesture_id = #{gestureId}
+          AND mapping_item_id != #{excludeItemId}
+    </select>
+
+    <select id="countByActionIdExcludingItem" resultType="int">
+        SELECT COUNT(*)
+        FROM mapping_items
+        WHERE mapping_id = #{mappingId}
+          AND action_id = #{actionId}
+          AND mapping_item_id != #{excludeItemId}
+    </select>
+
+</mapper>

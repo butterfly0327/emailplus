@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.backend.backend.domain.mapping.mapper.MappingItemMapper">
+    <select id="findById" resultMap="MappingItemResultMap">
+        SELECT mapping_item_id, mapping_id, gesture_id, action_id
+        FROM mapping_items
+        WHERE mapping_item_id = #{id}
+    </select>
+
+    <select id="findByMappingId" resultMap="MappingItemResultMap">
+        SELECT mapping_item_id, mapping_id, gesture_id, action_id
+        FROM mapping_items
+        WHERE mapping_id = #{mappingId}
+        ORDER BY mapping_item_id
+    </select>
+
+    <select id="findDetailByMappingId" resultType="com.backend.backend.domain.mapping.dto.MappingDetailItemResponse">
+        SELECT
+            mi.mapping_item_id AS mappingId,
+            mi.action_id AS actionId,
+            a.action_name AS actionName,
+            a.action_description AS actionDescription,
+            mi.gesture_id AS gestureId,
+            g.gesture_name AS gestureName
+        FROM mapping_items mi
+        LEFT JOIN actions a ON mi.action_id = a.action_id
+        LEFT JOIN gestures g ON mi.gesture_id = g.gesture_id
+        LEFT JOIN mappings m ON mi.mapping_id = m.mapping_id
+        WHERE mi.mapping_id = #{mappingId}
+        ORDER BY mi.mapping_item_id
+
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO mapping_items (mapping_id, gesture_id, action_id)
+        VALUES (#{mapping.id}, #{gestureId}, #{actionId})
+    </insert>
+
+    <delete id="deleteItem">
+        DELETE FROM mapping_items WHERE mapping_item_id = #{itemId}
+    </delete>
+
+    <delete id="deleteByMappingId">
+        DELETE FROM mapping_items WHERE mapping_id = #{mappingId}
+    </delete>
+
+    <update id="changeItem">
+        UPDATE mapping_items
+        SET gesture_id = #{gestureId}, action_id = #{actionId}
+        WHERE mapping_item_id = #{itemId}
+    </update>
+
+    <select id="existsByMappingIdAndGestureId" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM mapping_items
+            WHERE mapping_id = #{mappingId} AND gesture_id = #{gestureId}
+        )
+    </select>
+
+    <select id="existsByMappingIdAndActionId" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM mapping_items
+            WHERE mapping_id = #{mappingId} AND action_id = #{actionId}
+        )
+    </select>
+
+    <resultMap id="MappingItemResultMap" type="com.backend.backend.domain.mapping.entity.MappingItem">
+        <id property="id" column="mapping_item_id"/>
+        <result property="gestureId" column="gesture_id"/>
+        <result property="actionId" column="action_id"/>
+        <association property="mapping" javaType="com.backend.backend.domain.mapping.entity.Mapping">
+            <id property="id" column="mapping_id"/>
+        </association>
+    </resultMap>
+</mapper>

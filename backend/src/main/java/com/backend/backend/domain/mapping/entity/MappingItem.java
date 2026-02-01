@@ -1,0 +1,17 @@
+package com.backend.backend.domain.mapping.entity;
+
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+
+@Getter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+public class MappingItem {
+    private Long id;
+    private Mapping mapping;
+    private Long gestureId;
+    private Long actionId;
+}

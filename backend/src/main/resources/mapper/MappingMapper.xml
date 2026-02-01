@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.backend.backend.domain.mapping.mapper.MappingMapper">
+    <select id="findUserMappingList" resultType="com.backend.backend.domain.mapping.dto.MappingListResponse">
+        SELECT
+            m.mapping_id as presetId,
+            ROW_NUMBER() OVER (ORDER BY m.mapping_id) as orderIndex,
+            m.mapping_name as title,
+            m.is_active as isRepresentative,
+            COUNT(mi.mapping_item_id) AS gestureCount
+        FROM mappings m
+                 LEFT JOIN mapping_items mi ON mi.mapping_id = m.mapping_id
+        WHERE m.account_id = #{accountId}
+        GROUP BY m.mapping_id, m.mapping_name, m.is_active
+        ORDER BY m.mapping_id
+    </select>
+
+    <select id="findById" resultMap="MappingResultMap">
+        SELECT mapping_id, account_id, mapping_name, is_active, change_type, note, created_at, updated_at
+        FROM mappings
+        WHERE mapping_id = #{id}
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO mappings (account_id, mapping_name, is_active, change_type, note, created_at, updated_at)
+        VALUES (#{account.id}, #{name}, #{isActive}, #{changeType}, #{note}, #{createdAt}, #{updatedAt})
+    </insert>
+
+    <update id="update">
+        UPDATE mappings
+        SET mapping_name = #{name}, is_active = #{isActive}, change_type = #{changeType}, note = #{note}, updated_at = #{updatedAt}
+        WHERE mapping_id = #{id}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM mappings WHERE mapping_id = #{id}
+    </delete>
+
+    <update id="deactivateAllByAccountId">
+        UPDATE mappings SET is_active = false WHERE account_id = #{accountId}
+    </update>
+
+    <select id="findActiveByAccountId" resultMap="MappingResultMap">
+        SELECT mapping_id, account_id, mapping_name, is_active, change_type, note, created_at, updated_at
+        FROM mappings
+        WHERE account_id = #{accountId} AND is_active = true
+    </select>
+
+    <select id="existsByAccountIdAndName" resultType="boolean">
+        SELECT EXISTS(
+            SELECT 1 FROM mappings
+            WHERE account_id = #{accountId} AND mapping_name = #{name}
+        )
+    </select>
+
+    <update id="updateName">
+        UPDATE mappings
+        SET mapping_name = #{name}, updated_at = NOW()
+        WHERE mapping_id = #{id}
+    </update>
+
+    <resultMap id="MappingResultMap" type="com.backend.backend.domain.mapping.entity.Mapping">
+        <id property="id" column="mapping_id"/>
+        <result property="name" column="mapping_name"/>
+        <result property="isActive" column="is_active"/>
+        <result property="changeType" column="change_type"/>
+        <result property="note" column="note"/>
+        <result property="createdAt" column="created_at"/>
+        <result property="updatedAt" column="updated_at"/>
+        <association property="account" javaType="com.backend.backend.domain.auth.entity.Account">
+            <id property="id" column="account_id"/>
+        </association>
+    </resultMap>
+
+</mapper>

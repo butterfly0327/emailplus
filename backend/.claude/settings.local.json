@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(./gradlew test:*)",
+      "Bash(grep:*)",
+      "Bash(./gradlew clean test:*)",
+      "Bash(Select-String -Pattern \"ClassNotFoundException\" -Context 2,2)",
+      "Bash(findstr:*)",
+      "Bash(xargs cat:*)",
+      "Bash(find:*)",
+      "Bash(tasklist:*)",
+      "Bash(./gradlew:*)",
+      "Bash(move \"src\\\\main\\\\java\\\\com\\\\backend\\\\backend\\\\global\\\\error\\\\ErrorResponse.java\" \"src\\\\main\\\\java\\\\com\\\\backend\\\\backend\\\\global\\\\exception\\\\ErrorResponse.java\")",
+      "Bash(move \"src\\\\main\\\\java\\\\com\\\\backend\\\\backend\\\\global\\\\error\\\\GlobalExceptionHandler.java\" \"src\\\\main\\\\java\\\\com\\\\backend\\\\backend\\\\global\\\\exception\\\\GlobalExceptionHandler.java\")"
+    ]
+  }
+}

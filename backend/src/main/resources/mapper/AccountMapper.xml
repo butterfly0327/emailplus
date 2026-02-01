@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.backend.backend.domain.auth.mapper.AccountMapper">
+
+    <resultMap id="AccountResultMap" type="com.backend.backend.domain.auth.entity.Account">
+        <id property="id" column="account_id"/>
+        <result property="email" column="email"/>
+        <result property="username" column="username"/>
+        <result property="password" column="password"/>
+        <result property="deleteCheck" column="delete_check"/>
+    </resultMap>
+
+    <select id="findAll" resultMap="AccountResultMap">
+        SELECT account_id, email, username, password, delete_check
+        FROM accounts
+        WHERE delete_check = false
+    </select>
+
+    <select id="findById" parameterType="Long" resultMap="AccountResultMap">
+        SELECT account_id, email, username, password, delete_check
+        FROM accounts
+        WHERE account_id = #{id} AND delete_check = false
+    </select>
+
+    <select id="findByEmail" parameterType="String" resultMap="AccountResultMap">
+        SELECT account_id, email, username, password, delete_check
+        FROM accounts
+        WHERE email = #{email} AND delete_check = false
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO accounts (email, password, username, delete_check)
+        VALUES (#{email}, #{password}, #{username}, #{deleteCheck})
+    </insert>
+
+    <update id="update" parameterType="com.backend.backend.domain.auth.entity.Account">
+        UPDATE accounts
+        SET email = #{email}, username = #{username}, password = #{password}
+        WHERE account_id = #{id}
+    </update>
+
+    <update id="delete" parameterType="Long">
+        UPDATE accounts
+        SET delete_check = true
+        WHERE account_id = #{id}
+    </update>
+
+    <update id="updatePassword">
+        UPDATE accounts
+        SET password = #{password}
+        WHERE account_id = #{id}
+    </update>
+
+    <delete id="hardDeleteByEmail" parameterType="String">
+        DELETE FROM accounts
+        WHERE email = #{email}
+    </delete>
+
+    <delete id="hardDeleteById" parameterType="Long">
+        DELETE FROM accounts
+        WHERE account_id = #{id}
+    </delete>
+
+</mapper>

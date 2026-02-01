@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.backend.backend.domain.mapping.mapper.GestureMapper">
+
+    <select id="findNotUseMapping" resultType="com.backend.backend.domain.mapping.dto.GestureResponse">
+        SELECT
+            g.gesture_id AS gestureId,
+            g.gesture_name AS name,
+            g.gesture_description AS description
+        FROM gestures g
+        WHERE NOT EXISTS (
+            SELECT 1
+            FROM mapping_items mi
+            WHERE mi.gesture_id = g.gesture_id
+              AND mi.mapping_id = #{mappingId}
+        );
+    </select>
+
+    <select id="findAvailableGesturesForAction" resultType="com.backend.backend.domain.mapping.dto.GestureFixResponse">
+        SELECT
+            g.gesture_id AS gestureId,
+            g.gesture_name AS name,
+            g.gesture_description AS description,
+            CASE WHEN mi.mapping_item_id IS NOT NULL THEN true ELSE false END AS isUsed,
+            a.action_id AS actionId,
+            a.action_name AS actionName
+        FROM gestures g
+        LEFT JOIN mapping_items mi ON g.gesture_id = mi.gesture_id AND mi.mapping_id = #{mappingId}
+        LEFT JOIN actions a ON mi.action_id = a.action_id
+        WHERE mi.action_id = #{actionId}
+           OR NOT EXISTS (
+               SELECT 1 FROM mapping_items mi2
+               WHERE mi2.gesture_id = g.gesture_id
+                 AND mi2.mapping_id = #{mappingId}
+           )
+        ORDER BY g.gesture_id
+    </select>
+
+    <select id="existsById" resultType="boolean">
+        SELECT EXISTS(SELECT 1 FROM gestures WHERE gesture_id = #{gestureId})
+    </select>
+
+</mapper>
