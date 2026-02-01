@@ -16,14 +16,18 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StreamUtils;
 
+import java.io.IOException;
 import java.security.SecureRandom;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -53,6 +57,9 @@ public class AuthService {
     private static final String OTP_KEY_PREFIX = "auth:otp:";
     private static final String VERIFICATION_TOKEN_KEY_PREFIX = "auth:verification-token:";
     private static final String OTP_EMAIL_SUBJECT = "[E202] 이메일 인증번호";
+    private static final String OTP_EMAIL_TEMPLATE_PATH = "templates/otp-email.html";
+    private static final String LOGO_RESOURCE_PATH = "email/logo.png";
+    private static final String LOGO_CONTENT_ID = "emailLogo";
 
     private static final String REFRESH_TOKEN_PREFIX = "RT:";
 
@@ -238,6 +245,7 @@ public class AuthService {
             helper.setFrom(authMailProperties.getFrom());
             helper.setSubject(OTP_EMAIL_SUBJECT);
             helper.setText(buildEmailBody(otp, expire), true);
+            addInlineLogo(helper);
             javaMailSender.send(message);
         } catch (MessagingException e) {
             throw new CustomException(ErrorCode.EMAIL_SEND_FAIL);
@@ -261,15 +269,26 @@ public class AuthService {
 
     private String buildEmailBody(String otp, Duration expire) {
         long minutes = expire.toMinutes();
-        return """
-            <div style="font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; max-width: 600px;">
-              <h2>이메일 인증번호 안내</h2>
-              <p>아래 인증번호를 입력하여 이메일 인증을 완료해주세요.</p>
-              <div style="font-size: 28px; font-weight: bold; letter-spacing: 4px; margin: 16px 0;">
-                %s
-              </div>
-              <p>인증번호는 %d분 동안만 유효합니다.</p>
-            </div>
-            """.formatted(otp, minutes);
+        String template = loadEmailTemplate();
+        return template
+                .replace("{{OTP}}", otp)
+                .replace("{{EXPIRE_MINUTES}}", String.valueOf(minutes))
+                .replace("{{LOGO_CID}}", "cid:" + LOGO_CONTENT_ID);
+    }
+
+    private String loadEmailTemplate() {
+        ClassPathResource resource = new ClassPathResource(OTP_EMAIL_TEMPLATE_PATH);
+        try {
+            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new CustomException(ErrorCode.EMAIL_SEND_FAIL);
+        }
+    }
+
+    private void addInlineLogo(MimeMessageHelper helper) throws MessagingException {
+        ClassPathResource logoResource = new ClassPathResource(LOGO_RESOURCE_PATH);
+        if (logoResource.exists()) {
+            helper.addInline(LOGO_CONTENT_ID, logoResource, "image/png");
+        }
     }
 }
