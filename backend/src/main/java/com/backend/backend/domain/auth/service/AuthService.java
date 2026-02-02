@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -25,6 +26,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StreamUtils;
 
+import javax.imageio.ImageIO;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.SecureRandom;
 import java.nio.charset.StandardCharsets;
@@ -60,6 +66,7 @@ public class AuthService {
     private static final String OTP_EMAIL_TEMPLATE_PATH = "templates/otp-email.html";
     private static final String LOGO_RESOURCE_PATH = "email/logo.png";
     private static final String LOGO_CONTENT_ID = "emailLogo";
+    private static final int LOGO_TARGET_SIZE = 80;
 
     private static final String REFRESH_TOKEN_PREFIX = "RT:";
 
@@ -288,7 +295,30 @@ public class AuthService {
     private void addInlineLogo(MimeMessageHelper helper) throws MessagingException {
         ClassPathResource logoResource = new ClassPathResource(LOGO_RESOURCE_PATH);
         if (logoResource.exists()) {
-            helper.addInline(LOGO_CONTENT_ID, logoResource, "image/png");
+            try {
+                byte[] logoBytes = resizeLogoToTarget(logoResource);
+                helper.addInline(LOGO_CONTENT_ID, new ByteArrayResource(logoBytes), "image/png");
+            } catch (IOException e) {
+                helper.addInline(LOGO_CONTENT_ID, logoResource, "image/png");
+            }
+        }
+    }
+
+    private byte[] resizeLogoToTarget(ClassPathResource logoResource) throws IOException {
+        try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            BufferedImage originalImage = ImageIO.read(logoResource.getInputStream());
+            if (originalImage == null) {
+                throw new IOException("Unable to read logo image.");
+            }
+            BufferedImage resizedImage = new BufferedImage(LOGO_TARGET_SIZE, LOGO_TARGET_SIZE, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D graphics = resizedImage.createGraphics();
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            graphics.drawImage(originalImage, 0, 0, LOGO_TARGET_SIZE, LOGO_TARGET_SIZE, null);
+            graphics.dispose();
+            ImageIO.write(resizedImage, "png", outputStream);
+            return outputStream.toByteArray();
         }
     }
 }
