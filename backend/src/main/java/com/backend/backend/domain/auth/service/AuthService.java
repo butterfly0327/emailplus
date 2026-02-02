@@ -66,9 +66,10 @@ public class AuthService {
     private static final String OTP_EMAIL_TEMPLATE_PATH = "templates/otp-email.html";
     private static final String LOGO_RESOURCE_PATH = "email/logo.png";
     private static final String LOGO_CONTENT_ID = "emailLogo";
-    private static final int LOGO_TARGET_SIZE = 80;
+    private static final int LOGO_TARGET_SIZE = 160;
 
     private static final String REFRESH_TOKEN_PREFIX = "RT:";
+    private volatile byte[] cachedLogoBytes;
 
     public LoginResponse login(LoginRequest request) {
         Account account = accountMapper.findByEmail(request.getEmail());
@@ -296,11 +297,23 @@ public class AuthService {
         ClassPathResource logoResource = new ClassPathResource(LOGO_RESOURCE_PATH);
         if (logoResource.exists()) {
             try {
-                byte[] logoBytes = resizeLogoToTarget(logoResource);
-                helper.addInline(LOGO_CONTENT_ID, new ByteArrayResource(logoBytes), "image/png");
+                helper.addInline(LOGO_CONTENT_ID, new ByteArrayResource(getOrCreateLogoBytes(logoResource)), "image/png");
             } catch (IOException e) {
                 helper.addInline(LOGO_CONTENT_ID, logoResource, "image/png");
             }
+        }
+    }
+
+    private byte[] getOrCreateLogoBytes(ClassPathResource logoResource) throws IOException {
+        byte[] cachedBytes = cachedLogoBytes;
+        if (cachedBytes != null) {
+            return cachedBytes;
+        }
+        synchronized (this) {
+            if (cachedLogoBytes == null) {
+                cachedLogoBytes = resizeLogoToTarget(logoResource);
+            }
+            return cachedLogoBytes;
         }
     }
 
@@ -312,7 +325,7 @@ public class AuthService {
             }
             BufferedImage resizedImage = new BufferedImage(LOGO_TARGET_SIZE, LOGO_TARGET_SIZE, BufferedImage.TYPE_INT_ARGB);
             Graphics2D graphics = resizedImage.createGraphics();
-            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
             graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             graphics.drawImage(originalImage, 0, 0, LOGO_TARGET_SIZE, LOGO_TARGET_SIZE, null);
